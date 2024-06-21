@@ -3020,6 +3020,8 @@ public class S3ProxyHandler {
                 response.addHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS,
                         "true");
             }
+            //RapidMinerAddition
+            response.addHeader(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, "ETag");
         }
     }
 
