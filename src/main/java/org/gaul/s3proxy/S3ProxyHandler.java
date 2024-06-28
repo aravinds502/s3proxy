@@ -33,6 +33,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
@@ -2254,9 +2255,9 @@ public class S3ProxyHandler {
         if (Quirks.MULTIPART_REQUIRES_STUB.contains(getBlobStoreType(
                 blobStore))) {
             metadata = blobStore.blobMetadata(containerName, uploadId);
-            BlobAccess access = blobStore.getBlobAccess(containerName,
-                    uploadId);
-            options = new PutOptions().setBlobAccess(access);
+            // Rapidminer Update
+            //BlobAccess access = blobStore.getBlobAccess(containerName, uploadId);
+            options = new PutOptions().setBlobAccess(BlobAccess.PRIVATE).multipart(true);
         } else {
             metadata = new MutableBlobMetadataImpl();
             options = new PutOptions();
@@ -2299,7 +2300,7 @@ public class S3ProxyHandler {
                 }
                 String eTag = blobStore.completeMultipartUpload(mpu2, subParts);
                 parts.add(MultipartPart.create(
-                        partNumber, partSize, eTag, /*lastModified=*/ null));
+                        partNumber, partSize, eTag, Date.from(Instant.now())));
             }
         } else {
             CompleteMultipartUploadRequest cmu;
@@ -2848,14 +2849,19 @@ public class S3ProxyHandler {
                     BaseEncoding.base16().lowerCase().encode(
                             his.hash().asBytes())));
         } else {
-            MultipartPart part;
+            MultipartPart part = null;
             Payload payload = Payloads.newInputStreamPayload(is);
             payload.getContentMetadata().setContentLength(contentLength);
             if (contentMD5 != null) {
                 payload.getContentMetadata().setContentMD5(contentMD5);
             }
-
-            part = blobStore.uploadMultipartPart(mpu, partNumber, payload);
+            // Rapidminer inclusion
+            try {
+                part = blobStore.uploadMultipartPart(mpu, partNumber, payload);
+            } catch (Exception ex) {
+                logger.info("Obtained the error:" + ex);
+                throw ex;
+            }
 
             if (part.partETag() != null) {
                 response.addHeader(HttpHeaders.ETAG,
